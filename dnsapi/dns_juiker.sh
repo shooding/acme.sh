@@ -91,76 +91,10 @@ dns_juiker_add() {
 
 #fulldomain txtvalue
 dns_juiker_rm() {
-  fulldomain=$1
-  txtvalue=$2
     
-  _debug "First detect the root zone"
-  if ! _get_root "$fulldomain"; then
-    _err "invalid domain when rm()"
-    _sleep 1
-    return 1
-  fi
-  _debug _domain_id "$_domain_id"
-  _debug _sub_domain "$_sub_domain"
-  _debug _domain "$_domain"
+  _debug "Juiker DNS API supports only update operation. Your TXT record will be kept for next challenge."
+  return 0
 
-  _info "Getting existing records for $fulldomain"
-  if ! _juiker_rest GET "2013-04-01$_domain_id/rrset" "name=$fulldomain&type=TXT"; then
-    _sleep 1
-    return 1
-  fi
-
-  # if _contains "$response" "<Name>$fulldomain.</Name>"; then
-  #   _resource_record="$(echo "$response" | sed 's/<ResourceRecordSet>/"/g' | tr '"' "\n" | grep "<Name>$fulldomain.</Name>" | _egrep_o "<ResourceRecords.*</ResourceRecords>" | sed "s/<ResourceRecords>//" | sed "s#</ResourceRecords>##")"
-  #   _debug "_resource_record" "$_resource_record"
-  # else
-  #   _debug "no records exist, skip"
-  #   _sleep 1
-  #   return 0
-  # fi
-
-  if echo "$response" | jq -e --arg fd "$fulldomain." '
-     .ResourceRecordSets[]?
-     | select(.Name == $fd and .Type == "TXT")' > /dev/null; then
-     _debug "_resource_record" "$fulldomain"
-  else   
-    _debug "no records exist, skip"
-    _sleep 1
-    return 0
-  fi
-
-  # _aws_tmpl_xml="<ChangeResourceRecordSetsRequest xmlns=\"https://route53.amazonaws.com/doc/2013-04-01/\"><ChangeBatch><Changes><Change><Action>DELETE</Action><ResourceRecordSet><ResourceRecords>$_resource_record</ResourceRecords><Name>$fulldomain.</Name><Type>TXT</Type><TTL>300</TTL></ResourceRecordSet></Change></Changes></ChangeBatch></ChangeResourceRecordSetsRequest>"
-  _aws_tmpl_json='{
-  "changeBatch": {
-    "changes": [
-      {
-        "action": "DELETE",
-        "resourceRecordSet": {
-          "name": "'${fulldomain}'",
-          "type": "TXT",
-          "ttl": 300,
-          "resourceRecords": [
-            {
-              "value": "\"'${txtvalue}'\""
-            }
-          ]
-        }
-      }
-    ]
-  }
-}'
-
-  if _juiker_rest POST "2013-04-01$_domain_id/rrset/" "" "$_aws_tmpl_json" && echo "$response" | jq -e '
-    .ChangeResourceRecordSetsResponse?
-    | select(.ChangeInfo.Status == "PENDING")
-  ' > /dev/null 2>&1; then
-    _info "TXT record deleted successfully."    
-    _sleep 1    
-
-    return 0
-  fi
-  _sleep 1
-  return 1
 }
 
 ####################  Private functions below ##################################
