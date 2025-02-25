@@ -39,11 +39,12 @@ dns_juiker_add() {
   _debug _sub_domain "$_sub_domain"
   _debug _domain "$_domain"
 
-  _info "Getting existing records for $fulldomain"
-  if ! _juiker_rest GET "2013-04-01$_domain_id/rrset" "name=$fulldomain&type=TXT"; then
-    _sleep 1
-    return 1
-  fi
+  # Juiker allows only update, therefore TXT always remain there
+  # _info "Getting existing records for $fulldomain"
+  # if ! _juiker_rest GET "2013-04-01$_domain_id/rrset" "name=$fulldomain&type=TXT"; then
+  #   _sleep 1
+  #   return 1
+  # fi
 
   if echo "$response" | jq -e --arg fd "$fulldomain." '
      .ResourceRecordSets[]?
